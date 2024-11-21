@@ -7,23 +7,23 @@ import (
 )
 
 type MessageData struct {
-	Content string     `json:"content,omitempty"`
-	Embed   *EmbedData `json:"embed,omitempty"`
+	Content string     `json:"Content,omitempty"`
+	Embed   *EmbedData `json:"Embed,omitempty"`
 }
 
 type EmbedData struct {
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-	URL         string `json:"url,omitempty"`
-	Color       string `json:"color,omitempty"`
-	Footer      Footer `json:"footer,omitempty"`
-	Image       string `json:"image,omitempty"`
-	Thumbnail   string `json:"thumbnail,omitempty"`
+	Title       string `json:"Title,omitempty"`
+	Description string `json:"Description,omitempty"`
+	URL         string `json:"Url,omitempty"`
+	Color       string `json:"Color,omitempty"`
+	Footer      Footer `json:"Footer,omitempty"`
+	Image       string `json:"Image,omitempty"`
+	Thumbnail   string `json:"Thumbnail,omitempty"`
 }
 
 type Footer struct {
-	Text    string `json:"text,omitempty"`
-	IconURL string `json:"icon_url,omitempty"`
+	Text    string `json:"Text,omitempty"`
+	IconURL string `json:"Icon_url,omitempty"`
 }
 
 func CreateMessageSend(message MessageData) (*discordgo.MessageSend, error) {

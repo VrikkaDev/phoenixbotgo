@@ -18,7 +18,7 @@ type configuration struct {
 
 	DiscordToken string
 
-	GuildID int `json:"GuildID"`
+	GuildID string `json:"GuildID"`
 }
 
 var Configuration *configuration

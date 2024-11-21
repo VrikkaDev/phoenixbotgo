@@ -1,108 +1,127 @@
 {
-    // example command
-    example: {
-        
-    },
-    
-    commands: {
-        pseed:{
+  Enabled: true,
 
-        }    
-    },
+  Commands: {
 
-
-  pseed: {
-    "description": "Obtain Phoenix server Minecraft world seed",
-    "allowed_channels": {
-      "844183310179368990": "phoenix-general"
-    },
-    "response": {
-        "text": "Phoenix SeedMap (1.20.4)",
-        "embedded": "True",
-        "link": "https://www.chunkbase.com/apps/seed-map#3259590416100447320",
-        "color": "0x00aaff",
-        "embedded_description": "3259590416100447320 | Same seed for 1.20.4 & 1.12.2"
-    }
-  },
-  "nostalgia":{
-    "description": "get random shii server ip",
-    "allowed_channels": {
-      "1045692892070555809": "trusted",
-		"802635649306984488": "bot-commands",
-		"1299445574587781213": "nostalgia"
-    },
-    "response": {
-        "text": "Server for playing Minecraft the way it was 'intended, without crazy fast farms, exploiting the natives (as much), or displacing 1,000s of metric tons of the earth: **1._21.1_**: ```nostalgia.phoenixmc.tech```",
-        "embedded": "false",
-        "link": "",
-        "color": "0xFF5733",
-        "embedded_description": ""
-    }
-  },
-  "extra":{
-    "description": "Obtain Phoenix creative multiplayer IP address",
-    "allowed_channels": {
-      "844183310179368990": "phoenix-general"
-    },
-    "response": {
-        "text": "Phoenix Extra (**1.20.4**): ```extra.phoenixmc.tech```",
-        "embedded": "false",
-        "link": "",
-        "color": "0xFF5733",
-        "embedded_description": ""
-    }
-  },
-  "psurvival": {
-    "description": "Obtain Phoenix survival server IP address",
-    "allowed_channels": {
-      "844183310179368990": "phoenix-general"
-    },
-    "response": {
-      "text": "Phoenix Survival (***1.20.4***): ```survival.phoenixmc.tech```",
-      "embedded": "false",
-      "link": "",
-      "color": "0xFF5733",
-      "embedded_description": ""
-    }
-  },
-    "illegally": {
-      "description": "Obtain Phoenix Illegals (1.12.2) IP address",
-      "allowed_channels": {
-        "844183310179368990": "phoenix-general"
+    pseed: {
+      Enabled: true,
+      Description: "Obtain Phoenix server Minecraft world seed",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
       },
-      "response": {
-        "text": "Phoenix Illegals (***1.12.2***): This server doesn't exist right now",
-        "embedded": "false",
-        "link": "",
-        "color": "0xFF5733",
-        "embedded_description": ""
-      }
+      Response: {
+        Content: "Phoenix SeedMap (1.20.4)",
+        Embed: {
+          Description: "3259590416100447320 | Same seed for 1.20.4 & 1.12.2",
+          Url: "https://www.chunkbase.com/apps/seed-map#3259590416100447320",
+          Color: "0x00AAFF",
+        },
       },
-    "clone":{
-    "description": "Obtain Phoenix Creative Copy",
-    "allowed_channels": {
-      "844183310179368990": "phoenix-general"
     },
-    "response": {
-      "text": "Creative copy of the survival server (***1.20.4***): ```clone.phoenixmc.tech```",
-      "embedded": "false",
-      "link": "",
-      "color": "0xFF5733",
-      "embedded_description": ""
-    }
+    nostalgia: {
+      Enabled: true,
+      Description: "Get random shii server IP",
+      Allowed_channels: {
+        trusted: "1045692892070555809",
+        "bot-commands": "802635649306984488",
+        nostalgia: "1299445574587781213",
+      },
+      Response: {
+        Content: "Server for playing Minecraft the way it was 'intended, without crazy fast farms, exploiting the natives (as much), or displacing 1,000s of metric tons of the earth: **1._21.1_**: ```nostalgia.phoenixmc.tech```",
+      },
+    },
+    extra: {
+      Enabled: true,
+      Description: "Obtain Phoenix creative multiplayer IP address",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
+      },
+      Response: {
+        Content: "Phoenix Extra (**1.20.4**): ```extra.phoenixmc.tech```",
+      },
+    },
+    psurvival: {
+      Enabled: true,
+      Description: "Obtain Phoenix survival server IP address",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
+      },
+      Response: {
+        Content: "Phoenix Survival (***1.20.4***): ```survival.phoenixmc.tech```",
+      },
+    },
+    illegally: {
+      Enabled: true,
+      Description: "Obtain Phoenix Illegals (1.12.2) IP address",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
+      },
+      Response: {
+        Content: "Phoenix Illegals (***1.12.2***): This server doesn't exist right now",
+      },
+    },
+    clone: {
+      Enabled: true,
+      Description: "Obtain Phoenix Creative Copy",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
+      },
+      Response: {
+        Content: "Creative copy of the survival server (***1.20.4***): ```clone.phoenixmc.tech```",
+      },
+    },
+    bluemap: {
+      Enabled: true,
+      Description: "Obtain Phoenix survival interactive map",
+      Allowed_channels: {
+        "phoenix-general": "844183310179368990",
+        "bot-commands": "802635649306984488",
+      },
+      Response: {
+        Content: "Phoenix BlueMap",
+        Embed: {
+          Description: "Phoenix Survival Blue Map with waypoints",
+          Url: "https://survival.phoenixmc.tech",
+          Color: "0x0000FF",
+        },
+      },
+    },
+
   },
-	"bluemap": {
-    "description": "Obtain Phoenix survival interactive map",
-    "allowed_channels": {
-      "844183310179368990": "phoenix-general",
-		"802635649306984488": "bot-commands"
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // example command
+  example: {
+    Enabled: true,
+    Description: "example desc",
+    Allowed_channels: {
+      "phoenix-general": "844183310179368990",
     },
-    "response": {
-        "text": "Phoenix BlueMap",
-        "embedded": "True",
-        "link": "https://survival.phoenixmc.tech",
-        "color": "#0000FF",
-        "embedded_description": "Phoenix Survival Blue Map with waypoints"
-	    }
-	}
+    Response:{ 
+      Content: "Example message:",
+      Embed: {
+          Title: "Example embed title",
+          Description: "This is example description",
+          Url: "https://example.com",
+          Color: "0xFF5733", // hex
+          Footer: {
+              Text: "Footer text",
+              Icon_url: "https://example.com/footer_icon.png"
+          },
+          Thumbnail: "https://example.com/thumbnail.png",
+          Image: "https://example.com/image.png"
+      },
+    },
+  },
 }

@@ -1,21 +1,21 @@
 {
-    GuildID: 802017282728525895,
+    GuildID: "802017282728525895",
 
 
     //Example use of embed message 
     Message: {
-        content: "Here is the ticket message:",
-        embed: {
-            title: "Example embed title",
-            description: "This is example description",
-            url: "https://example.com",
-            color: "0xFF5733", // Optional, the color is passed as a string (hex)
-            footer: {
-                text: "Footer text",
-                icon_url: "https://example.com/footer_icon.png"
+        Content: "Here is the ticket message:",
+        Embed: {
+            Title: "Example embed title",
+            Description: "This is example description",
+            Url: "https://example.com",
+            Color: "0xFF5733", // hex
+            Footer: {
+                Text: "Footer text",
+                Icon_url: "https://example.com/footer_icon.png"
             },
-            thumbnail: "https://example.com/thumbnail.png",
-            image: "https://example.com/image.png"
+            Thumbnail: "https://example.com/thumbnail.png",
+            Image: "https://example.com/image.png"
         }
     }
 }

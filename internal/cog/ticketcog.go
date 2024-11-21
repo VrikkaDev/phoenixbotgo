@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"phoenixbot/internal/config"
 	"phoenixbot/internal/util"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -22,9 +21,9 @@ type TicketConfig struct {
 		TicketCreateMessage  util.MessageData `json:"TicketCreateMessage"`
 	} `json:"Messages"`
 
-	Channel  int            `json:"Channel"`
-	AddRoles map[string]int `json:"AddRoles"`
-	Enabled  bool           `json:"Enabled"`
+	Channel  string            `json:"Channel"`
+	AddRoles map[string]string `json:"AddRoles"`
+	Enabled  bool              `json:"Enabled"`
 }
 
 type TicketCog struct {
@@ -57,9 +56,8 @@ func (m *TicketCog) Init() error {
 
 	m.Session.AddHandler(m.handleInteractionCreate)
 
-	chn := strconv.Itoa(m.Config.Channel)
-	util.ClearMessagesOnChannel(m.Session, chn, nil)
-	m.sendApplyMessage(chn)
+	util.ClearMessagesOnChannel(m.Session, m.Config.Channel, nil)
+	m.sendApplyMessage(m.Config.Channel)
 
 	config.Logger.Infoln(m.Name(), "initialized!")
 	return nil

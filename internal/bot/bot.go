@@ -30,7 +30,7 @@ func Run() {
 func initCogs() {
 
 	if discord.Session == nil {
-		config.Logger.Panic("Init cogs before initializing discord session")
+		config.Logger.Panic("Tried to init cogs before initializing discord session")
 	}
 
 	cogList := []cog.Cog{
@@ -38,6 +38,10 @@ func initCogs() {
 			ConfigName:  "ticket.json5",
 			Session:     discord.Session,
 			TicketUsers: sync.Map{},
+		},
+		&cog.CommandCog{
+			ConfigName: "command.json5",
+			Session:    discord.Session,
 		},
 	}
 
