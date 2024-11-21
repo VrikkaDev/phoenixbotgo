@@ -66,16 +66,15 @@ func (m *TicketCog) Init() error {
 }
 
 func (m *TicketCog) sendApplyMessage(channelID string) {
+	message, err := util.CreateMessageSend(m.Config.Messages.TicketCreateMessage)
+	if err != nil {
+		config.Logger.Errorln(err)
+	}
+
 	applyButton := discordgo.Button{
 		Label:    "Apply",
 		Style:    discordgo.PrimaryButton,
 		CustomID: "create_ticket_button",
-	}
-
-	message, err := util.CreateMessageSend(m.Config.Messages.TicketCreateMessage)
-
-	if err != nil {
-		config.Logger.Errorln(err)
 	}
 
 	message.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{applyButton}}}
@@ -93,8 +92,6 @@ func (m *TicketCog) handleInteractionCreate(session *discordgo.Session, interact
 	}
 
 	customID := interaction.MessageComponentData().CustomID
-
-	config.Logger.Infoln(customID)
 
 	switch customID {
 	case "create_ticket_button":
@@ -164,7 +161,15 @@ func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *
 	}
 
 	replacer := strings.NewReplacer("{user_id}", userId)
-	messend.Embed.Description = replacer.Replace(messend.Embed.Description)
+	messend.Content = replacer.Replace(messend.Content)
+
+	closeTicketButton := discordgo.Button{
+		Label:    "Close ticket",
+		Style:    discordgo.DangerButton,
+		CustomID: "close_ticket_button",
+	}
+
+	messend.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{closeTicketButton}}}
 
 	_, err = session.ChannelMessageSendComplex(thread.ID, messend)
 	if err != nil {

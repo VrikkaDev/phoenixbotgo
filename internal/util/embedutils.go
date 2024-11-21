@@ -7,8 +7,8 @@ import (
 )
 
 type MessageData struct {
-	Content string    `json:"content,omitempty"`
-	Embed   EmbedData `json:"embed,omitempty"`
+	Content string     `json:"content,omitempty"`
+	Embed   *EmbedData `json:"embed,omitempty"`
 }
 
 type EmbedData struct {
@@ -40,7 +40,11 @@ func CreateMessageSend(message MessageData) (*discordgo.MessageSend, error) {
 	return mess, nil
 }
 
-func CreateEmbed(message EmbedData) (*discordgo.MessageEmbed, error) {
+func CreateEmbed(message *EmbedData) (*discordgo.MessageEmbed, error) {
+
+	if message == nil {
+		return nil, nil
+	}
 
 	embed := &discordgo.MessageEmbed{}
 

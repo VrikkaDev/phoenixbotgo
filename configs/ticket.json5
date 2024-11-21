@@ -18,9 +18,6 @@
         // @498251642974765078  @&1149700153628971101
         TicketChannelMessage: {
             content: "<@{user_id}> Welcome to the Phoenix SMP! We'd like to know if you're 13+, how much experience (if any) you have with technical Minecraft,your interests (inside and outside tech MC) , your availability, and/or timezone/country. We'll respond shortly! Reminders: server is 1.20.4 w/ Expiremental Features running Carpet Mod and hosted in Frankfurt, Germany. PLEASE... You don't need to DM <> or anyone with <> role about server questions. Anyone will be more than happy to answer your questions in #phoenix-general, not just him. Lastly, upon acceptance, you'll be given a trial member role, unlike other servers, we'll remove your trial member status as soon as you say, 'this is a server for me, I wanna stay and help.'",
-            embed: {
-                color: "0xFF5733",
-            }
         }
     },
     
