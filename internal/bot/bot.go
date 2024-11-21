@@ -1,11 +1,13 @@
 package bot
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"phoenixbot/internal/cog"
 	"phoenixbot/internal/config"
 	"phoenixbot/internal/discord"
+	"sync"
 	"syscall"
 )
 
@@ -14,10 +16,12 @@ func Run() {
 
 	discord.Init()
 	initCogs()
+	discord.InitConnection()
 
 	defer discord.Session.Close()
 
 	config.Logger.Infoln("Bot is running.")
+	fmt.Println("Bot is running")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
@@ -30,12 +34,16 @@ func initCogs() {
 	}
 
 	cogList := []cog.Cog{
-		&cog.TicketCog{},
+		&cog.TicketCog{
+			ConfigName:  "ticket.json5",
+			Session:     discord.Session,
+			TicketUsers: sync.Map{},
+		},
 	}
 
+	config.Logger.Infoln("Loading cogs ...")
 	for _, c := range cogList {
-		config.Logger.Infoln("Loading cog:", c.Name())
-		err := c.Init(discord.Session)
+		err := c.Init()
 		if err != nil {
 			config.Logger.Fatal("Error initializing cog:", c.Name(), err)
 		}
