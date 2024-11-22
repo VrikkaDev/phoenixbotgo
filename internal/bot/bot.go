@@ -43,6 +43,10 @@ func initCogs() {
 			ConfigName: "command.json5",
 			Session:    discord.Session,
 		},
+		&cog.MusicCog{
+			ConfigName: "music.json5",
+			Session:    discord.Session,
+		},
 	}
 
 	config.Logger.Infoln("Loading cogs ...")
