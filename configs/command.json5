@@ -1,8 +1,8 @@
 {
-  Enabled: true,
-
+  Enabled: false,
+  
   Commands: {
-
+    
     pseed: {
       Enabled: true,
       Description: "Obtain Phoenix server Minecraft world seed",
@@ -86,7 +86,7 @@
         },
       },
     },
-
+  
   },
 
 

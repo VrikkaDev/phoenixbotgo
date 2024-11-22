@@ -1,6 +1,6 @@
 {
-    GuildID: "802017282728525895",
-
+    GuildID: "551871200255672371", //aoe2
+    //GuildID: "802017282728525895",//phoenix
 
     //Example use of embed message 
     Message: {

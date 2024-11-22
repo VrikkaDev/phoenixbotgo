@@ -1,0 +1,12 @@
+{
+    Enabled: true,
+
+    //Music_channel: "1308930530787725383", //phoenix
+    Music_channel: "1309539027405377577", //aoe2
+    Max_queue_size: 50, // Maximum number of songs in the queue
+    Embed_colors: {
+        Playing: "0x00FF00",
+        Paused: "0xFFFF00",
+        Error: "0xFF0000"
+    }
+}
