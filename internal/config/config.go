@@ -18,7 +18,7 @@ type configuration struct {
 
 	DiscordToken string
 
-	GuildID string `json:"GuildID"`
+	Guilds map[string]bool `json:"Guilds"`
 }
 
 var Configuration *configuration
@@ -70,4 +70,8 @@ func LoadConfig(filename string, config interface{}) error {
 		Logger.Error("couldnt read config file: ", filename, "  ", err)
 	}
 	return nil
+}
+
+func IsGuildEnabled(guildID string) bool {
+	return Configuration.Guilds[guildID]
 }

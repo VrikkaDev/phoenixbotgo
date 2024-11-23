@@ -1,23 +1,27 @@
 package cog
 
 import (
+	"fmt"
 	"phoenixbot/internal/config"
 	"phoenixbot/internal/discord"
-	"phoenixbot/internal/util"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type CommandData struct {
-	Enabled         bool              `json:"Enabled"`
-	Description     string            `json:"Description"`
-	AllowedChannels map[string]string `json:"Allowed_channels"` // Allowed channels (name and ID)
-	Response        util.MessageData  `json:"Response"`
+	Enabled         bool                `json:"Enabled"`
+	Description     string              `json:"Description"`
+	AllowedChannels map[string]string   `json:"Allowed_channels"` // Allowed channels (name and ID)
+	Response        discord.MessageData `json:"Response"`
+}
+
+type CommandGuildConfig struct {
+	Enabled  bool                   `json:"Enabled"`
+	Commands map[string]CommandData `json:"Commands"`
 }
 
 type CommandConfig struct {
-	Enabled  bool                   `json:"Enabled"`
-	Commands map[string]CommandData `json:"Commands"`
+	Guilds map[string]CommandGuildConfig `json:"Guilds"`
 }
 
 type CommandCog struct {
@@ -41,17 +45,22 @@ func (m *CommandCog) Init() error {
 	}
 	m.Config = &commandConfig
 
-	if !commandConfig.Enabled {
-		config.Logger.Infoln("Command feature disabled in configs")
-		return nil
-	}
-
-	m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
-		config.Logger.Infoln("Bot is ready, registering commands...")
-		if err := m.registerCommands(); err != nil {
-			config.Logger.Errorf("Failed to register commands: %v", err)
+	for guild, com := range m.Config.Guilds {
+		if !config.IsGuildEnabled(guild) {
+			continue
 		}
-	})
+		if !com.Enabled {
+			config.Logger.Infoln("Command feature disabled in config, on server ", guild)
+			continue
+		}
+
+		m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
+			config.Logger.Infoln("Registering commands for server", guild)
+			if err := m.registerCommands(guild); err != nil {
+				config.Logger.Errorf("Failed to register commands: %v", err)
+			}
+		})
+	}
 
 	m.Session.AddHandler(m.HandleInteraction)
 
@@ -59,12 +68,18 @@ func (m *CommandCog) Init() error {
 	return nil
 }
 
-func (m *CommandCog) registerCommands() error {
-	if m.Config == nil || !m.Config.Enabled {
+func (m *CommandCog) registerCommands(guildID string) error {
+
+	conf, ok := m.Config.Guilds[guildID]
+	if !ok {
+		return fmt.Errorf("couldnt find command config for guild %s", guildID)
+	}
+
+	if m.Config == nil || !conf.Enabled {
 		return nil
 	}
 
-	for name, command := range m.Config.Commands {
+	for name, command := range conf.Commands {
 		if !command.Enabled {
 			continue
 		}
@@ -74,7 +89,7 @@ func (m *CommandCog) registerCommands() error {
 			Description: command.Description,
 		}
 
-		_, err := m.Session.ApplicationCommandCreate(m.Session.State.User.ID, config.Configuration.GuildID, appCommand)
+		_, err := m.Session.ApplicationCommandCreate(m.Session.State.User.ID, guildID, appCommand)
 		if err != nil {
 			config.Logger.Errorf("Failed to register command '%s': %v", name, err)
 			return err
@@ -91,8 +106,14 @@ func (m *CommandCog) HandleInteraction(session *discordgo.Session, interaction *
 		return
 	}
 
+	conf, ok := m.Config.Guilds[interaction.GuildID]
+	if !ok {
+		config.Logger.Warnln("Couldnt find command config for guild ", interaction.GuildID)
+		return
+	}
+
 	commandName := interaction.ApplicationCommandData().Name
-	command, exists := m.Config.Commands[commandName]
+	command, exists := conf.Commands[commandName]
 	if !exists || !command.Enabled {
 		return
 	}
@@ -108,7 +129,7 @@ func (m *CommandCog) HandleInteraction(session *discordgo.Session, interaction *
 		return
 	}
 
-	ms, err := util.CreateMessageSend(command.Response)
+	ms, err := discord.CreateMessageSend(command.Response)
 	if err != nil {
 		config.Logger.Errorln(err)
 		return

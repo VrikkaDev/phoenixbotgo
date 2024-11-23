@@ -1,6 +1,10 @@
 {
-    GuildID: "551871200255672371", //aoe2
-    //GuildID: "802017282728525895",//phoenix
+    Guilds:{
+        "551871200255672371": true, //aoe2
+        "802017282728525895": true, //phoenix
+    },
+    
+    
 
     //Example use of embed message 
     Message: {

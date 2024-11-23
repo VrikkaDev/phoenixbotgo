@@ -3,27 +3,31 @@ package cog
 import (
 	"fmt"
 	"phoenixbot/internal/config"
-	"phoenixbot/internal/util"
+	"phoenixbot/internal/discord"
 	"strings"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-type TicketConfig struct {
+type TicketGuildConfig struct {
 	Messages struct {
 		TicketCreated     string `json:"TicketCreated"`
 		NoPermission      string `json:"NoPermission"`
 		CloseTicketPrompt string `json:"CloseTicketPrompt"`
 		AlreadyHasTicket  string `json:"AlreadyHasTicket"`
 
-		TicketChannelMessage util.MessageData `json:"TicketChannelMessage"`
-		TicketCreateMessage  util.MessageData `json:"TicketCreateMessage"`
+		TicketChannelMessage discord.MessageData `json:"TicketChannelMessage"`
+		TicketCreateMessage  discord.MessageData `json:"TicketCreateMessage"`
 	} `json:"Messages"`
 
 	Channel  string            `json:"Channel"`
 	AddRoles map[string]string `json:"AddRoles"`
 	Enabled  bool              `json:"Enabled"`
+}
+
+type TicketConfig struct {
+	Guilds map[string]TicketGuildConfig `json:"Guilds"`
 }
 
 type TicketCog struct {
@@ -49,22 +53,33 @@ func (m *TicketCog) Init() error {
 	}
 	m.Config = &ticketConfig
 
-	if !ticketConfig.Enabled {
-		config.Logger.Infoln("Ticket feature disabled in configs")
-		return nil
+	for guild, tic := range m.Config.Guilds {
+		if !config.IsGuildEnabled(guild) {
+			continue
+		}
+		if !tic.Enabled {
+			config.Logger.Infoln("Ticket feature disabled in config, on server ", guild)
+			continue
+		}
+
+		discord.ClearMessagesOnChannel(m.Session, tic.Channel, nil)
+		m.sendApplyMessage(guild, tic.Channel)
 	}
 
 	m.Session.AddHandler(m.handleInteractionCreate)
-
-	util.ClearMessagesOnChannel(m.Session, m.Config.Channel, nil)
-	m.sendApplyMessage(m.Config.Channel)
 
 	config.Logger.Infoln(m.Name(), "initialized!")
 	return nil
 }
 
-func (m *TicketCog) sendApplyMessage(channelID string) {
-	message, err := util.CreateMessageSend(m.Config.Messages.TicketCreateMessage)
+func (m *TicketCog) sendApplyMessage(guildID string, channelID string) {
+
+	conf, ok := m.Config.Guilds[guildID]
+	if !ok {
+		return
+	}
+
+	message, err := discord.CreateMessageSend(conf.Messages.TicketCreateMessage)
 	if err != nil {
 		config.Logger.Errorln(err)
 	}
@@ -105,6 +120,11 @@ func (m *TicketCog) handleInteractionCreate(session *discordgo.Session, interact
 
 func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *discordgo.Interaction) {
 
+	conf, ok := m.Config.Guilds[interaction.GuildID]
+	if !ok {
+		return
+	}
+
 	var userId string
 	if interaction.User != nil {
 		userId = interaction.User.ID
@@ -127,7 +147,7 @@ func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *
 		session.InteractionRespond(interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: m.Config.Messages.AlreadyHasTicket,
+				Content: conf.Messages.AlreadyHasTicket,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -144,7 +164,7 @@ func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *
 	}
 
 	m.TicketUsers.Store(userId, thread.ID)
-	responseMessage := strings.NewReplacer("{channel}", thread.Mention()).Replace(m.Config.Messages.TicketCreated)
+	responseMessage := strings.NewReplacer("{channel}", thread.Mention()).Replace(conf.Messages.TicketCreated)
 	session.InteractionRespond(interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -153,7 +173,7 @@ func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *
 		},
 	})
 
-	messend, err := util.CreateMessageSend(m.Config.Messages.TicketChannelMessage)
+	messend, err := discord.CreateMessageSend(conf.Messages.TicketChannelMessage)
 	if err != nil {
 		config.Logger.Errorln("error creating MessageSend of TickedChannelMessage: ", err)
 	}
@@ -176,7 +196,13 @@ func (m *TicketCog) handleCreateTicket(session *discordgo.Session, interaction *
 }
 
 func (m *TicketCog) handleCloseTicketPrompt(session *discordgo.Session, interaction *discordgo.Interaction) {
-	closePrompt := m.Config.Messages.CloseTicketPrompt
+
+	conf, ok := m.Config.Guilds[interaction.GuildID]
+	if !ok {
+		return
+	}
+
+	closePrompt := conf.Messages.CloseTicketPrompt
 	session.InteractionRespond(interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{

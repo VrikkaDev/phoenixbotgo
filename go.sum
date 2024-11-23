@@ -1,5 +1,7 @@
 github.com/bitly/go-simplejson v0.5.1 h1:xgwPbetQScXt1gh9BmoJ6j9JMr3TElvuIyjR8pgdoow=
 github.com/bitly/go-simplejson v0.5.1/go.mod h1:YOPVLzCfwK14b4Sff3oP1AmGhI9T9Vsg84etUnlyp+Q=
+github.com/bwmarrin/dgvoice v0.0.0-20210225172318-caaac756e02e h1:IdfGDWLNL/ZAHda33oiKnkoaWWsQ6vyO+MDslrcJ43M=
+github.com/bwmarrin/dgvoice v0.0.0-20210225172318-caaac756e02e/go.mod h1:DT3heoMAQGrOExZ3Rb3TBOQ4Bm+wD4H48KFnt1YfLoQ=
 github.com/bwmarrin/discordgo v0.28.1 h1:gXsuo2GBO7NbR6uqmrrBDplPUx2T3nzu775q/Rd1aG4=
 github.com/bwmarrin/discordgo v0.28.1/go.mod h1:NJZpH+1AfhIcyQsPeuBKsUtYrRnjkyu0kIVMCHkZtRY=
 github.com/chzyer/logex v1.2.0/go.mod h1:9+9sk7u7pGNWYMkh0hdiL++6OeibzJccyQU4p4MedaY=
@@ -92,3 +94,5 @@ gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
 gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32 h1:/S1gOotFo2sADAIdSGk1sDq1VxetoCWr6f5nxOG0dpY=
+layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32/go.mod h1:yDtyzWZDFCVnva8NGtg38eH2Ns4J0D/6hD+MMeUGdF0=
