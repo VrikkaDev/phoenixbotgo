@@ -1,1 +1,7 @@
 .env
+error.log
+latest.log
+configs/config.json5
+configs/music.json5
+configs/ticket.json5
+configs/command.json5

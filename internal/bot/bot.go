@@ -18,13 +18,19 @@ func Run() {
 	initCogs()
 	discord.InitConnection()
 
-	defer discord.Session.Close()
+	defer func() {
+		if discord.Session != nil {
+			discord.Session.Close()
+		}
+		config.Logger.Infoln("Bot has shut down.")
+	}()
 
 	config.Logger.Infoln("Bot is running.")
 	fmt.Println("Bot is running")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+	config.Logger.Infoln("Shutdown signal received.")
 }
 
 func initCogs() {

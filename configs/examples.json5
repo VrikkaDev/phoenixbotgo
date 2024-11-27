@@ -1,0 +1,18 @@
+{
+  //Example use of embed message
+  Message: {
+    Content: "Here is the ticket message:",
+    Embed: {
+      Title: "Example embed title",
+      Description: "This is example description",
+      Url: "https://example.com",
+      Color: "0xFF5733", // hex
+      Footer: {
+        Text: "Footer text",
+        Icon_url: "https://example.com/footer_icon.png",
+      },
+      Thumbnail: "https://example.com/thumbnail.png",
+      Image: "https://example.com/image.png",
+    },
+  },
+}

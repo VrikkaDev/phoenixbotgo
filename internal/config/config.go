@@ -26,7 +26,14 @@ var Configuration *configuration
 var configpaths = []string{"./configs/"}
 
 func Load() {
-	slogger, err := zap.NewDevelopment()
+	slogger, err := zap.Config{
+		Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
+		Development:      true,
+		Encoding:         "console",
+		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+		OutputPaths:      []string{"stderr", "latest.log"},
+		ErrorOutputPaths: []string{"stderr", "error.log"},
+	}.Build()
 	if err != nil {
 		panic(err)
 	}

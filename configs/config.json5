@@ -1,25 +1,8 @@
 {
-    Guilds:{
-        "551871200255672371": true, //aoe2
-        "802017282728525895": true, //phoenix
-    },
-    
-    
-
-    //Example use of embed message 
-    Message: {
-        Content: "Here is the ticket message:",
-        Embed: {
-            Title: "Example embed title",
-            Description: "This is example description",
-            Url: "https://example.com",
-            Color: "0xFF5733", // hex
-            Footer: {
-                Text: "Footer text",
-                Icon_url: "https://example.com/footer_icon.png"
-            },
-            Thumbnail: "https://example.com/thumbnail.png",
-            Image: "https://example.com/image.png"
-        }
-    }
+  Guilds: {
+    //aoe2
+    "551871200255672371": true, 
+    //phoenix
+    "802017282728525895": true, 
+  }
 }

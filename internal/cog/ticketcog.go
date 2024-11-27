@@ -27,7 +27,7 @@ type TicketGuildConfig struct {
 }
 
 type TicketConfig struct {
-	Guilds map[string]TicketGuildConfig `json:"Guilds"`
+	Guilds map[string]*TicketGuildConfig `json:"Guilds"`
 }
 
 type TicketCog struct {

@@ -21,7 +21,7 @@ type Song struct {
 	Duration string
 }
 
-type MusicConfig struct {
+type MusicGuildConfig struct {
 	Enabled        bool   `json:"Enabled"`
 	Music_channel  string `json:"Music_channel"`
 	Max_queue_size int    `json:"Max_queue_size"`
@@ -30,6 +30,17 @@ type MusicConfig struct {
 		Paused  string `json:"Paused"`
 		Error   string `json:"Error"`
 	} `json:"Embed_colors"`
+
+	Queue            []Song
+	CurrentlyPlaying *Song
+	IsPlaying        bool
+
+	MessageId       string
+	VoiceConnection *discordgo.VoiceConnection
+}
+
+type MusicConfig struct {
+	Guilds map[string]*MusicGuildConfig `json:"Guilds"`
 }
 
 type MusicCog struct {
@@ -37,15 +48,9 @@ type MusicCog struct {
 	Session    *discordgo.Session
 	ConfigName string
 
-	Queue            []Song
-	QueueMutex       sync.RWMutex
-	CurrentlyPlaying *Song
-	IsPlaying        bool
+	Config     *MusicConfig
+	MusicMutex sync.RWMutex
 
-	MessageId       string
-	VoiceConnection *discordgo.VoiceConnection
-
-	Config  *MusicConfig
 	Youtube *youtube.Client
 }
 
@@ -60,22 +65,32 @@ func (m *MusicCog) Init() error {
 	}
 	m.Config = &musicConfig
 
-	if !musicConfig.Enabled {
-		config.Logger.Infoln("Music feature disabled in configs")
-		return nil
+	m.MusicMutex.Lock()
+	glds := m.Config.Guilds
+	m.MusicMutex.Unlock()
+
+	for guild, mus := range glds {
+		if !config.IsGuildEnabled(guild) {
+			continue
+		}
+		if !mus.Enabled {
+			config.Logger.Infoln("Music feature disabled in config, on server ", guild)
+			continue
+		}
+		discord.ClearMessagesOnChannel(m.Session, mus.Music_channel, nil)
+
+		m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
+			m.updateMusicEmbed(s, guild)
+		})
+
+		mus.Queue = make([]Song, 0)
+
+		m.Config.Guilds[guild] = mus
+		m.Youtube = &youtube.Client{}
 	}
-
-	discord.ClearMessagesOnChannel(m.Session, m.Config.Music_channel, nil)
-
-	m.Queue = make([]Song, 0)
-	m.Youtube = &youtube.Client{}
 
 	m.Session.AddHandler(m.handleMessage)
 	m.Session.AddHandler(m.handleInteraction)
-
-	m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
-		m.updateMusicEmbed(s)
-	})
 
 	return nil
 }
@@ -85,6 +100,8 @@ func (m *MusicCog) getYoutubeVideo(s *discordgo.Session, msg *discordgo.MessageC
 	video, err := m.fetchYouTubeVideo(msg.Content)
 	if err == nil {
 		return video, nil
+	} else {
+		config.Logger.Warnln(err)
 	}
 
 	newurl, err := music.FindYouTubeVideo(msg.Content)
@@ -92,18 +109,37 @@ func (m *MusicCog) getYoutubeVideo(s *discordgo.Session, msg *discordgo.MessageC
 		video, err = m.fetchYouTubeVideo(newurl)
 		if err == nil {
 			return video, nil
+		} else {
+			return nil, err
 		}
 	}
 
 	return nil, fmt.Errorf("couldnt find youtube video of that name or url")
 }
 
+func (m *MusicCog) getConfig(guildID string) *MusicGuildConfig {
+	m.MusicMutex.RLock()
+	defer m.MusicMutex.RUnlock()
+
+	conf, ok := m.Config.Guilds[guildID]
+	if !ok || !config.IsGuildEnabled(guildID) {
+		return nil
+	}
+
+	return conf
+}
 func (m *MusicCog) handleMessage(s *discordgo.Session, msg *discordgo.MessageCreate) {
-	if msg.Author.Bot || msg.ChannelID != m.Config.Music_channel {
+
+	conf := m.getConfig(msg.GuildID)
+	if conf == nil {
 		return
 	}
 
-	defer s.ChannelMessageDelete(m.Config.Music_channel, msg.ID)
+	if msg.Author.Bot || msg.ChannelID != conf.Music_channel {
+		return
+	}
+
+	defer s.ChannelMessageDelete(conf.Music_channel, msg.ID)
 
 	voiceState := discord.GetUserVoiceState(s, msg.GuildID, msg.Author.ID)
 	if voiceState == nil {
@@ -124,17 +160,18 @@ func (m *MusicCog) handleMessage(s *discordgo.Session, msg *discordgo.MessageCre
 		return
 	}
 
-	m.QueueMutex.Lock()
-	defer m.QueueMutex.Unlock()
-
 	song := Song{
 		Title:    video.Title,
 		URL:      util.YoutubeIdToUrl(video.ID),
 		Duration: fmt.Sprintf("%02d:%02d", video.Duration/time.Minute, (video.Duration%time.Minute)/time.Second),
 	}
-	m.Queue = append(m.Queue, song)
-	if !m.IsPlaying {
-		m.startQueueWorker()
+	m.MusicMutex.Lock()
+
+	conf.Queue = append(conf.Queue, song)
+
+	m.MusicMutex.Unlock()
+	if !conf.IsPlaying {
+		m.startQueueWorker(msg.GuildID)
 	}
 }
 
@@ -143,12 +180,17 @@ func (m *MusicCog) fetchYouTubeVideo(url string) (*youtube.Video, error) {
 }
 
 func (m *MusicCog) joinVoiceChannelIfNeeded(guildID, channelID string) error {
-	if m.VoiceConnection != nil && m.VoiceConnection.ChannelID == channelID {
-		return nil
+
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		return fmt.Errorf("no config on musiccog for guild %s", guildID)
 	}
 
-	if m.VoiceConnection != nil {
-		m.VoiceConnection.Disconnect()
+	if conf.VoiceConnection != nil {
+		if conf.VoiceConnection.ChannelID == channelID {
+			return nil
+		}
+		conf.VoiceConnection.Disconnect()
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -156,43 +198,51 @@ func (m *MusicCog) joinVoiceChannelIfNeeded(guildID, channelID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to join voice channel: %v", err)
 	}
-	m.VoiceConnection = vc
+	conf.VoiceConnection = vc
 	return nil
 }
 
 func (m *MusicCog) handleInteraction(s *discordgo.Session, interaction *discordgo.InteractionCreate) {
+	gid := interaction.GuildID
 	switch interaction.MessageComponentData().CustomID {
 	case "phoenix_music_play":
-		m.resumePlayback()
+		m.resumePlayback(gid)
 	case "phoenix_music_pause":
-		m.pausePlayback()
+		m.pausePlayback(gid)
 	case "phoenix_music_skip":
-		m.skipSong()
+		m.skipSong(gid)
 	case "phoenix_music_disconnect":
-		m.disconnectFromVoice()
+		m.disconnectFromVoice(gid)
 	}
-	m.updateMusicEmbed(s)
+	m.updateMusicEmbed(s, gid)
 }
 
-func (m *MusicCog) startQueueWorker() {
+func (m *MusicCog) startQueueWorker(guildID string) {
+
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		return
+	}
+
 	go func() {
 		for {
-			m.QueueMutex.Lock()
-			if len(m.Queue) == 0 {
-				m.IsPlaying = false
-				m.CurrentlyPlaying = nil
-				m.QueueMutex.Unlock()
-				m.updateMusicEmbed(m.Session)
+			m.MusicMutex.Lock()
+			if len(conf.Queue) == 0 {
+				conf.IsPlaying = false
+				conf.CurrentlyPlaying = nil
+				m.MusicMutex.Unlock()
+				m.updateMusicEmbed(m.Session, guildID)
 				break
 			}
 
-			m.CurrentlyPlaying = &m.Queue[0]
-			m.Queue = m.Queue[1:]
-			m.IsPlaying = true
-			m.QueueMutex.Unlock()
+			conf.CurrentlyPlaying = &conf.Queue[0]
+			conf.Queue = conf.Queue[1:]
+			conf.IsPlaying = true
+			m.MusicMutex.Unlock()
 
-			m.updateMusicEmbed(m.Session)
-			err := m.streamCurrentSong()
+			m.updateMusicEmbed(m.Session, guildID)
+
+			err := m.streamCurrentSong(guildID)
 			if err != nil {
 				log.Println("Error streaming song:", err)
 			}
@@ -200,69 +250,107 @@ func (m *MusicCog) startQueueWorker() {
 	}()
 }
 
-func (m *MusicCog) streamCurrentSong() error {
-	if m.CurrentlyPlaying == nil || m.VoiceConnection == nil {
+func (m *MusicCog) streamCurrentSong(guildID string) error {
+	config.Logger.Debugln("Starting to stream current song")
+	tconf := m.getConfig(guildID)
+	if tconf == nil {
+		return fmt.Errorf("no config on musiccog for guild %s", guildID)
+	}
+
+	conf := tconf
+	m.MusicMutex.Lock()
+	defer m.MusicMutex.Unlock()
+
+	if conf.CurrentlyPlaying == nil || conf.VoiceConnection == nil {
 		return nil
 	}
 
-	stream, err := music.GetYouTubeStream(m.CurrentlyPlaying.URL)
+	config.Logger.Debugln("Fetching stream for:", conf.CurrentlyPlaying.URL)
+	u := conf.CurrentlyPlaying.URL
+	stream, err := music.GetYouTubeStream(u)
 	if err != nil {
-		return fmt.Errorf("failed to get stream URL: %v", err)
+		config.Logger.Errorln("Failed to get stream:", err)
+		return err
 	}
 	defer stream.Close()
 
+	config.Logger.Debugln("Stream obtained, starting to decode PCM")
 	pcmChan := make(chan []int16, 1024)
-
 	go func() {
-		err := music.DecodeAudioToPCM(stream, pcmChan)
-		if err != nil {
-			log.Printf("Error decoding audio: %v", err)
+		if err := music.DecodeAudioToPCM(stream, pcmChan); err != nil {
+			config.Logger.Errorln("Error decoding audio: %v", err)
 		}
 		close(pcmChan)
 	}()
 
-	dgvoice.SendPCM(m.VoiceConnection, pcmChan)
+	dgvoice.SendPCM(conf.VoiceConnection, pcmChan)
 
 	return nil
 }
 
-func (m *MusicCog) pausePlayback() {
-	m.IsPlaying = false
+func (m *MusicCog) pausePlayback(guildID string) {
+
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		config.Logger.Warnln("no config on musiccog for guild ", guildID)
+		return
+	}
+	conf.IsPlaying = false
 }
 
-func (m *MusicCog) resumePlayback() {
-	if m.CurrentlyPlaying != nil && !m.IsPlaying {
-		m.IsPlaying = true
-		m.startQueueWorker()
+func (m *MusicCog) resumePlayback(guildID string) {
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		config.Logger.Warnln("no config on musiccog for guild ", guildID)
+		return
+	}
+	if conf.CurrentlyPlaying != nil && !conf.IsPlaying {
+		conf.IsPlaying = true
+		m.startQueueWorker(guildID)
 	}
 }
 
-func (m *MusicCog) skipSong() {
-	m.startQueueWorker()
+func (m *MusicCog) skipSong(guildID string) {
+	m.startQueueWorker(guildID)
 }
 
-func (m *MusicCog) disconnectFromVoice() {
-	if m.VoiceConnection != nil {
-		m.VoiceConnection.Disconnect()
-		m.VoiceConnection = nil
-		m.IsPlaying = false
-		m.CurrentlyPlaying = nil
-		m.Queue = nil
+func (m *MusicCog) disconnectFromVoice(guildID string) {
+
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		config.Logger.Warnln("no config on musiccog for guild ", guildID)
+		return
+	}
+	m.MusicMutex.Lock()
+	defer m.MusicMutex.Unlock()
+	if conf.VoiceConnection != nil {
+		conf.VoiceConnection.Disconnect()
+		conf.VoiceConnection = nil
+		conf.IsPlaying = false
+		conf.CurrentlyPlaying = nil
+		conf.Queue = nil
 	}
 }
 
-func (m *MusicCog) updateMusicEmbed(s *discordgo.Session) {
+func (m *MusicCog) updateMusicEmbed(s *discordgo.Session, guildID string) {
+
+	conf := m.getConfig(guildID)
+	if conf == nil {
+		config.Logger.Warnln("no config on musiccog for guild ", guildID)
+		return
+	}
+
 	var color int
-	if m.IsPlaying {
+	if conf.IsPlaying {
 		color = 0x00FF00
 	} else {
 		color = 0xFFFF00
 	}
 
 	description := "No songs currently playing."
-	if m.CurrentlyPlaying != nil {
-		description = fmt.Sprintf("**Now Playing:** [%s](%s) (%s)\n\n**Queue:**\n", m.CurrentlyPlaying.Title, m.CurrentlyPlaying.URL, m.CurrentlyPlaying.Duration)
-		for i, song := range m.Queue {
+	if conf.CurrentlyPlaying != nil {
+		description = fmt.Sprintf("**Now Playing:** [%s](%s) (%s)\n\n**Queue:**\n", conf.CurrentlyPlaying.Title, conf.CurrentlyPlaying.URL, conf.CurrentlyPlaying.Duration)
+		for i, song := range conf.Queue {
 			description += fmt.Sprintf("%d. [%s](%s) (%s)\n", i+1, song.Title, song.URL, song.Duration)
 			if i >= 4 {
 				description += "...and more\n"
@@ -284,21 +372,31 @@ func (m *MusicCog) updateMusicEmbed(s *discordgo.Session) {
 		discordgo.Button{Label: "Disconnect", CustomID: "phoenix_music_disconnect", Style: discordgo.DangerButton},
 	}
 
-	if m.MessageId == "" {
-		msg, err := s.ChannelMessageSendComplex(m.Config.Music_channel, &discordgo.MessageSend{
+	config.Logger.Debugln("messageid------", conf.MessageId)
+
+	m.MusicMutex.Lock()
+	msgID := conf.MessageId
+	m.MusicMutex.Unlock()
+
+	if msgID == "" {
+		msg, err := s.ChannelMessageSendComplex(conf.Music_channel, &discordgo.MessageSend{
 			Embed: embed,
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{Components: buttons},
 			},
 		})
 		if err == nil {
-			m.MessageId = msg.ID
+			m.MusicMutex.Lock()
+			conf.MessageId = msg.ID
+			m.MusicMutex.Unlock()
+		} else {
+			config.Logger.Errorln(err)
 		}
 	} else {
 		s.ChannelMessageEditComplex(&discordgo.MessageEdit{
 			Embed:      embed,
-			ID:         m.MessageId,
-			Channel:    m.Config.Music_channel,
+			ID:         conf.MessageId,
+			Channel:    conf.Music_channel,
 			Components: &[]discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}},
 		})
 	}

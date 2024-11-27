@@ -21,7 +21,7 @@ type CommandGuildConfig struct {
 }
 
 type CommandConfig struct {
-	Guilds map[string]CommandGuildConfig `json:"Guilds"`
+	Guilds map[string]*CommandGuildConfig `json:"Guilds"`
 }
 
 type CommandCog struct {
