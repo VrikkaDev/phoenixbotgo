@@ -12,7 +12,7 @@
       },
     },
     "551871200255672371": { //aoe2
-      Enabled: true,
+      Enabled: false,
 
       Music_channel: "1309539027405377577",
       Max_queue_size: 50,

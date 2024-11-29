@@ -79,15 +79,27 @@ func (m *MusicCog) Init() error {
 		}
 		discord.ClearMessagesOnChannel(m.Session, mus.Music_channel, nil)
 
-		m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
-			m.updateMusicEmbed(s, guild)
-		})
-
 		mus.Queue = make([]Song, 0)
+		config.Logger.Infoln()
 
+		m.MusicMutex.Lock()
 		m.Config.Guilds[guild] = mus
 		m.Youtube = &youtube.Client{}
+		m.MusicMutex.Unlock()
 	}
+
+	m.Session.AddHandlerOnce(func(s *discordgo.Session, r *discordgo.Ready) {
+		for guild, mus := range m.Config.Guilds {
+			if !config.IsGuildEnabled(guild) {
+				continue
+			}
+			if !mus.Enabled {
+				continue
+			}
+			m.updateMusicEmbed(m.Session, guild)
+		}
+
+	})
 
 	m.Session.AddHandler(m.handleMessage)
 	m.Session.AddHandler(m.handleInteraction)
@@ -97,22 +109,23 @@ func (m *MusicCog) Init() error {
 
 func (m *MusicCog) getYoutubeVideo(s *discordgo.Session, msg *discordgo.MessageCreate) (*youtube.Video, error) {
 
+	errs := []error{}
+
 	video, err := m.fetchYouTubeVideo(msg.Content)
 	if err == nil {
 		return video, nil
-	} else {
-		config.Logger.Warnln(err)
 	}
+	errs = append(errs, err)
 
 	newurl, err := music.FindYouTubeVideo(msg.Content)
 	if err == nil {
 		video, err = m.fetchYouTubeVideo(newurl)
 		if err == nil {
 			return video, nil
-		} else {
-			return nil, err
 		}
 	}
+	errs = append(errs, err)
+	config.Logger.Infoln(errs)
 
 	return nil, fmt.Errorf("couldnt find youtube video of that name or url")
 }
@@ -204,6 +217,15 @@ func (m *MusicCog) joinVoiceChannelIfNeeded(guildID, channelID string) error {
 
 func (m *MusicCog) handleInteraction(s *discordgo.Session, interaction *discordgo.InteractionCreate) {
 	gid := interaction.GuildID
+
+	conf := m.getConfig(gid)
+	if conf == nil {
+		return
+	}
+
+	if interaction.ChannelID != conf.Music_channel {
+		return
+	}
 	switch interaction.MessageComponentData().CustomID {
 	case "phoenix_music_play":
 		m.resumePlayback(gid)
@@ -371,8 +393,6 @@ func (m *MusicCog) updateMusicEmbed(s *discordgo.Session, guildID string) {
 		discordgo.Button{Label: "⏭️", CustomID: "phoenix_music_skip", Style: discordgo.SecondaryButton},
 		discordgo.Button{Label: "Disconnect", CustomID: "phoenix_music_disconnect", Style: discordgo.DangerButton},
 	}
-
-	config.Logger.Debugln("messageid------", conf.MessageId)
 
 	m.MusicMutex.Lock()
 	msgID := conf.MessageId

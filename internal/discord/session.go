@@ -57,11 +57,18 @@ func SendReplyMessageTimed(session *discordgo.Session, channelID, messageID, con
 }
 
 func SendInteractionResponse(session *discordgo.Session, interaction *discordgo.Interaction, msg *discordgo.MessageSend) error {
+	embeds := []*discordgo.MessageEmbed{}
+	if msg.Embed != nil {
+		embeds = append(embeds, msg.Embed)
+	} else {
+		embeds = nil
+	}
+
 	response := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: msg.Content,
-			Embeds:  []*discordgo.MessageEmbed{msg.Embed},
+			Embeds:  embeds,
 		},
 	}
 
