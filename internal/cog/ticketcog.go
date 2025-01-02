@@ -229,24 +229,23 @@ func (m *TicketCog) handleCloseTicketPrompt(session *discordgo.Session, interact
 
 func (m *TicketCog) handleConfirmCloseTicket(session *discordgo.Session, interaction *discordgo.Interaction) {
 	userID := interaction.Member.User.ID
+	threadID := interaction.ChannelID
 
-	threadID, exists := m.TicketUsers.Load(userID)
-	if !exists {
+	if _, err := session.ChannelDelete(threadID); err != nil {
+		config.Logger.Errorln("Failed to delete thread: ", err)
 		session.InteractionRespond(interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "No active ticket found.",
+				Content: "Failed to delete the ticket.",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
 		return
 	}
 
-	if _, err := session.ChannelDelete(threadID.(string)); err != nil {
-		config.Logger.Errorln("Failed to delete thread: ", err)
-		return
+	if _, exists := m.TicketUsers.Load(userID); exists {
+		m.TicketUsers.Delete(userID)
 	}
-	m.TicketUsers.Delete(userID)
 	session.InteractionRespond(interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
